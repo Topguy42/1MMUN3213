@@ -1,3 +1,4 @@
+import { IncrementalHtmlRewriter } from "../shared";
 import { ScramjetClient } from "./client";
 import { SourceMaps } from "./shared/sourcemaps";
 export declare class SingletonBox {
@@ -6,6 +7,7 @@ export declare class SingletonBox {
     globals: Map<Self, ScramjetClient>;
     documents: Map<Document, ScramjetClient>;
     locations: Map<Location, ScramjetClient>;
+    writeRewriters: WeakMap<Document, IncrementalHtmlRewriter>;
     ctors: Record<string, Function[]>;
     sourcemaps: SourceMaps;
     constructor(ownerclient: ScramjetClient);

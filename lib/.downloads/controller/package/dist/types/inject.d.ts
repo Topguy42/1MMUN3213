@@ -1,14 +1,16 @@
-import type { CookieJar, ScramjetConfig } from "@mercuryworkshop/scramjet";
-declare const CookieJar: typeof CookieJar;
-type Config = any;
+import type * as ScramjetGlobal from "@mercuryworkshop/scramjet";
+import type { RawHeaders } from "@mercuryworkshop/proxy-transports";
+import type { Config } from ".";
 type Init = {
     config: Config;
-    sjconfig: ScramjetConfig;
-    cookies: string;
+    sjconfig: ScramjetGlobal.ScramjetConfig;
     prefix: URL;
-    yieldGetInjectScripts: (cookieJar: CookieJar, config: Config, sjconfig: ScramjetConfig, prefix: URL) => any;
+    cookies: string;
+    yieldGetInjectScripts: (config: Config, sjconfig: ScramjetGlobal.ScramjetConfig, prefix: URL, cookieJar: ScramjetGlobal.CookieJar, codecEncode: (input: string) => string, codecDecode: (input: string) => string) => any;
     codecEncode: (input: string) => string;
     codecDecode: (input: string) => string;
+    initHeaders: RawHeaders;
+    history: ScramjetGlobal.TrackedHistoryState[];
 };
-export declare function load({ config, sjconfig, cookies, prefix, yieldGetInjectScripts, codecEncode, codecDecode, }: Init): void;
+export declare function load(init: Init): void;
 export {};

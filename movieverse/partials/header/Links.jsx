@@ -10,6 +10,7 @@ const Links = ({ isMobile }) => {
 
   const links = [
     "Home",
+    "AI",
     "Sports",
     "Catalog",
   ]

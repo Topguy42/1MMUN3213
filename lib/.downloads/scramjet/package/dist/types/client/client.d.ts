@@ -1,16 +1,21 @@
-type ScramjetFrame = any;
-import { BareCompatibleClient, ProxyTransport } from "@mercuryworkshop/proxy-transports";
-import { type URLMeta } from "../shared/rewriters/url";
-import { ScramjetContext } from "../shared";
+import { BareCompatibleClient, ProxyTransport, RawHeaders } from "@mercuryworkshop/proxy-transports";
+import { LifecycleHooks } from "./events";
+import { RewriteUrlOptions, type URLMeta } from "../shared/rewriters/url";
+import { HtmlRewriterHooks, ScramjetContext, ScramjetHeaders } from "../shared";
 import { SingletonBox } from "./singletonbox";
 import { ScramjetConfig } from "../types";
+import { type CookieSyncEntry, type CookieSyncOptions, TrackedHistoryState } from "../fetch";
+import { AnyFunction } from "../types";
+import { _URL } from "../shared/snapshot";
 export type ScramjetClientInit = {
     context: ScramjetContext;
     transport: ProxyTransport;
-    sendSetCookie: (url: URL, cookie: string) => Promise<void>;
+    sendSetCookie: (cookies: CookieSyncEntry[], options?: CookieSyncOptions) => Promise<void>;
     shouldPassthroughWebsocket?: (url: string | URL) => boolean;
     shouldBlockMessageEvent?: (ev: MessageEvent) => boolean;
     hookSubcontext: (self: Self, frame?: HTMLIFrameElement) => ScramjetClient;
+    initHeaders: RawHeaders;
+    history: TrackedHistoryState[];
 };
 type NativeStore = {
     store: Record<string, any>;
@@ -22,40 +27,45 @@ type DescriptorStore = {
     get: (target: string, that: any) => any;
     set: (target: string, that: any, value: any) => void;
 };
-export type AnyFunction = Function;
+type Traverse<O extends Record<any, any>, P extends string> = P extends `${infer K}.${infer R}` ? Traverse<O[K], R> : O[P];
+type GlobalTraverse<P extends string> = Traverse<GlobalThis & Record<string, any>, P>;
+type IfEquals<T, U, Y = unknown, N = never> = (<G>() => G extends T ? 1 : 2) extends <G>() => G extends U ? 1 : 2 ? Y : N;
+type ProxyApplyThis<T extends string> = unknown extends ThisParameterType<Extract<GlobalTraverse<T>, AnyFunction>> ? T extends `${infer ClassName}.prototype.${string}` ? GlobalTraverse<ClassName> extends {
+    prototype: infer Proto;
+} ? Proto : unknown : unknown : ThisParameterType<Extract<GlobalTraverse<T>, AnyFunction>>;
 export type ScramjetModule = {
     enabled: (client: ScramjetClient) => boolean | undefined;
-    disabled: (client: ScramjetClient, self: typeof globalThis) => void | undefined;
+    disabled: (client: ScramjetClient, self: GlobalThis) => void | undefined;
     order: number | undefined;
-    default: (client: ScramjetClient, self: typeof globalThis) => void;
+    default: (client: ScramjetClient, self: GlobalThis) => void;
 };
-export type ProxyCtx = {
-    fn: AnyFunction;
+export type ProxyCtx<T extends string = string, U extends "construct" | "apply" = "apply"> = {
+    fn: GlobalTraverse<T>;
+    this: IfEquals<U, "construct", null, ProxyApplyThis<T>>;
+    args: IfEquals<U, "construct", ConstructorParameters<GlobalTraverse<T>>, Parameters<GlobalTraverse<T>>>;
+    newTarget: IfEquals<U, "construct", GlobalTraverse<T>, null>;
+    return: (r: IfEquals<U, "construct", InstanceType<GlobalTraverse<T>>, ReturnType<GlobalTraverse<T>>>) => void;
+    call: () => IfEquals<U, "construct", InstanceType<GlobalTraverse<T>>, ReturnType<GlobalTraverse<T>>>;
+};
+export type Proxy<T extends string = string> = {
+    construct?(ctx: ProxyCtx<T, "construct">): any;
+    apply?(ctx: ProxyCtx<T, "apply">): any;
+};
+export type TrapCtx<T extends string> = {
     this: any;
-    args: any[];
-    newTarget: AnyFunction;
-    return: (r: any) => void;
-    call: () => any;
+    get: () => GlobalTraverse<T>;
+    set: (v: GlobalTraverse<T>) => void;
 };
-export type Proxy = {
-    construct?(ctx: ProxyCtx): any;
-    apply?(ctx: ProxyCtx): any;
-};
-export type TrapCtx<T> = {
-    this: any;
-    get: () => T;
-    set: (v: T) => void;
-};
-export type Trap<T> = {
+export type Trap<T extends string> = {
     writable?: boolean;
     value?: any;
     enumerable?: boolean;
     configurable?: boolean;
-    get?: (ctx: TrapCtx<T>) => T;
-    set?: (ctx: TrapCtx<T>, v: T) => void;
+    get?: (ctx: TrapCtx<T>) => GlobalTraverse<T>;
+    set?: (ctx: TrapCtx<T>, v: GlobalTraverse<T>) => void;
 };
 export declare class ScramjetClient {
-    global: typeof globalThis;
+    global: GlobalThis;
     init: ScramjetClientInit;
     locationProxy: any;
     serviceWorker: ServiceWorkerContainer;
@@ -73,17 +83,31 @@ export declare class ScramjetClient {
     meta: URLMeta;
     box: SingletonBox;
     context: ScramjetContext;
-    constructor(global: typeof globalThis, init: ScramjetClientInit);
-    get frame(): ScramjetFrame | null;
-    get isSubframe(): boolean;
+    initHeaders: ScramjetHeaders;
+    history: TrackedHistoryState[];
+    hooks: {
+        rewriter: {
+            html: import("../Tap").TapInstance<HtmlRewriterHooks>;
+        };
+        lifecycle: import("../Tap").TapInstance<LifecycleHooks>;
+    };
+    constructor(global: GlobalThis, init: ScramjetClientInit);
+    /** Apply document injection init when a client was already installed (e.g. early contentWindow). */
+    syncDocumentInit(init: {
+        initHeaders: RawHeaders;
+        history: TrackedHistoryState[];
+        cookies?: string;
+    }): void;
     hook(): void;
-    get url(): URL;
-    set url(url: URL | string);
-    Proxy(name: string | string[], handler: Proxy): void;
-    RawProxy(target: any, prop: string, handler: Proxy, debugname?: string): void;
-    Trap<T>(name: string | string[], descriptor: Trap<T>): PropertyDescriptor;
-    RawTrap<T>(target: any, prop: string, descriptor: Trap<T>): PropertyDescriptor;
-    rewriteUrl(url: string | URL): string;
+    get url(): _URL;
+    set url(url: _URL | string);
+    Proxy<T extends string>(name: T, handler: Proxy<T>): void;
+    Proxy<const T extends readonly string[]>(name: T, handler: Proxy<T[number]>): void;
+    RawProxy(target: any, prop: string, handler: Proxy<any>, debugname?: string): void;
+    Trap<T extends string>(name: T, handler: Trap<T>): void;
+    Trap<const T extends readonly string[]>(name: T, handler: Trap<T[number]>): void;
+    RawTrap(target: any, prop: string, descriptor: Trap<any>): void;
+    rewriteUrl(url: string | URL, options?: RewriteUrlOptions): string;
     unrewriteUrl(url: string | URL): string;
     flagEnabled(flag: keyof ScramjetConfig["flags"]): boolean;
     get config(): ScramjetConfig;

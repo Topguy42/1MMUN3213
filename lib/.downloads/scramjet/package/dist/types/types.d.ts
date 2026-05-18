@@ -1,6 +1,3 @@
-import { ScramjetClient } from "./client/index";
-import { SCRAMJETCLIENT } from "./symbols";
-import { DBSchema } from "idb";
 /**
  * Version information for the current Scramjet build.
  * Contains both the semantic version string and the git commit hash for build identification.
@@ -18,7 +15,7 @@ export interface ScramjetVersionInfo {
  */
 export type ScramjetFlags = {
     syncxhr: boolean;
-    strictRewrites: boolean;
+    disableComputedWrap: boolean;
     rewriterLogs: boolean;
     captureErrors: boolean;
     cleanErrors: boolean;
@@ -28,6 +25,7 @@ export type ScramjetFlags = {
     allowInvalidJs: boolean;
     allowFailedIntercepts: boolean;
     debugTrampolines: boolean;
+    debugSourceURL: boolean;
     encapsulateWorkers: boolean;
 };
 export interface ScramjetConfig {
@@ -63,53 +61,8 @@ declare global {
     interface Window {
         WASM: string;
         REAL_WASM: Uint8Array;
-        /**
-         * The scramjet client belonging to a window.
-         */
-        [SCRAMJETCLIENT]: ScramjetClient;
     }
     interface HTMLDocument {
-        /**
-         * Should be the same as window.
-         */
-        [SCRAMJETCLIENT]: ScramjetClient;
-    }
-    interface HTMLIFrameElement {
     }
 }
-export type SiteDirective = "same-origin" | "same-site" | "cross-site" | "none";
-export interface RedirectTracker {
-    originalReferrer: string;
-    mostRestrictiveSite: SiteDirective;
-    referrerPolicy: string;
-    chainStarted: number;
-}
-export interface ReferrerPolicyData {
-    policy: string;
-    referrer: string;
-}
-export interface ScramjetDB extends DBSchema {
-    config: {
-        key: string;
-        value: ScramjetConfig;
-    };
-    cookies: {
-        key: string;
-        value: any;
-    };
-    redirectTrackers: {
-        key: string;
-        value: RedirectTracker;
-    };
-    referrerPolicies: {
-        key: string;
-        value: ReferrerPolicyData;
-    };
-    publicSuffixList: {
-        key: string;
-        value: {
-            data: string[];
-            expiry: number;
-        };
-    };
-}
+export type AnyFunction = Function;
