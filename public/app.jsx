@@ -1612,6 +1612,13 @@ const AI = () => {
       return '';
     }
   });
+  const [provider, setProvider] = useState(() => {
+    try {
+      return localStorage.getItem('ai_provider') || 'groq';
+    } catch {
+      return 'groq';
+    }
+  });
   const [showApiInput, setShowApiInput] = useState(!apiKey);
   const messagesEndRef = useRef(null);
 
@@ -1642,6 +1649,7 @@ const AI = () => {
     if (key.trim()) {
       try {
         localStorage.setItem('ai_api_key', key.trim());
+        localStorage.setItem('ai_provider', provider);
       } catch {}
       setApiKey(key.trim());
       setShowApiInput(false);
@@ -1664,14 +1672,26 @@ const AI = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      const endpoints = {
+        groq: 'https://api.groq.com/openai/v1/chat/completions',
+        openai: 'https://api.openai.com/v1/chat/completions',
+      };
+      const models = {
+        groq: 'mixtral-8x7b-32768',
+        openai: 'gpt-3.5-turbo',
+      };
+
+      const endpoint = endpoints[provider];
+      const model = models[provider];
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: 'gpt-3.5-turbo',
+          model: model,
           messages: newMessages.map(m => ({
             role: m.role,
             content: m.content,
@@ -1714,7 +1734,7 @@ const AI = () => {
       <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--line)', background: 'var(--bg2)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text)' }}>AI Assistant</div>
-          <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '2px' }}>Powered by OpenAI</div>
+          <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '2px' }}>Powered by {provider.charAt(0).toUpperCase() + provider.slice(1)}</div>
         </div>
         <button
           onClick={() => setShowApiInput(!showApiInput)}
@@ -1777,11 +1797,28 @@ const AI = () => {
       {/* API Key Input */}
       {showApiInput && (
         <div style={{ padding: '16px 24px', borderTop: '1px solid var(--line)', background: 'var(--bg2)' }}>
-          <div style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '8px' }}>Enter your OpenAI API key (saved locally):</div>
+          <div style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '8px' }}>Select provider and enter API key (saved locally):</div>
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+            <select
+              value={provider}
+              onChange={(e) => setProvider(e.target.value)}
+              style={{
+                padding: '8px 12px',
+                border: '1px solid var(--line)',
+                borderRadius: '4px',
+                background: 'var(--bg)',
+                color: 'var(--text)',
+                fontSize: '12px',
+              }}
+            >
+              <option value="groq">Groq</option>
+              <option value="openai">OpenAI</option>
+            </select>
+          </div>
           <div style={{ display: 'flex', gap: '8px' }}>
             <input
               type="password"
-              placeholder="sk-..."
+              placeholder={provider === 'groq' ? 'gsk_...' : 'sk_...'}
               defaultValue={apiKey}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
