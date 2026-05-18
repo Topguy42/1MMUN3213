@@ -16,6 +16,23 @@ export default function ChatMessage({ message, onCopy }) {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const getTextContent = () => {
+    if (typeof message.content === "string") {
+      return message.content
+    }
+    if (Array.isArray(message.content)) {
+      return message.content.find(c => c.type === "text")?.text || ""
+    }
+    return ""
+  }
+
+  const getImages = () => {
+    if (Array.isArray(message.content)) {
+      return message.content.filter(c => c.type === "image_url")
+    }
+    return []
+  }
+
   const markdownComponents = {
     code({ node, inline, className, children, ...props }) {
       const match = /language-(\w+)/.exec(className || "")
@@ -63,11 +80,31 @@ export default function ChatMessage({ message, onCopy }) {
     },
   }
 
+  const textContent = getTextContent()
+  const images = getImages()
+
   return (
     <div className={`${styles.message} ${styles[message.role]}`}>
       <div className={styles.content}>
+        {images.length > 0 && (
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "12px" }}>
+            {images.map((img, idx) => (
+              <img
+                key={idx}
+                src={img.image_url.url}
+                alt="attachment"
+                style={{
+                  maxWidth: "200px",
+                  maxHeight: "200px",
+                  borderRadius: "4px",
+                  objectFit: "cover",
+                }}
+              />
+            ))}
+          </div>
+        )}
         <ReactMarkdown components={markdownComponents}>
-          {message.content}
+          {textContent}
         </ReactMarkdown>
       </div>
       {message.role === "assistant" && (
