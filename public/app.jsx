@@ -355,7 +355,7 @@ const AuthModal = ({ onClose }) => {
   );
 };
 
-const PAGE_KEYS = ['home', 'games', 'apps', 'tv', 'chatroom', 'settings', 'about'];
+const PAGE_KEYS = ['home', 'games', 'apps', 'tv', 'ai', 'chatroom', 'settings', 'about'];
 const PAGE_LABELS = { tv: 'tv' };
 
 function pageFromPath() {
@@ -649,13 +649,15 @@ const Catalog = ({ kind, items, tags, setActiveItem, favorites, toggleFav }) => 
                   <span className="name">{it.title}</span>
                   <span className="id-tag">{String(i + 1).padStart(3, '0')}</span>
                 </div>
-                <button
+                <div
                   className={cx('fav-btn', isFav && 'active')}
                   onClick={e => { e.stopPropagation(); toggleFav?.(kind, it.id); }}
                   title={isFav ? 'remove from saved' : 'save'}
+                  role="button"
+                  tabIndex="0"
                 >
                   {isFav ? '♥' : '♡'}
-                </button>
+                </div>
               </button>
             );
           })}
@@ -1892,7 +1894,7 @@ const App = () => {
       {page === 'games'    && <Catalog kind="games" items={window.GAMES} tags={window.GAME_TAGS} setActiveItem={setActiveItem} favorites={favorites} toggleFav={toggleFav} />}
       {page === 'apps'     && <Catalog kind="apps"  items={window.APPS}  tags={window.APP_TAGS}  setActiveItem={setActiveItem} favorites={favorites} toggleFav={toggleFav} />}
       {page === 'tv'       && <OneMMUN3TV theme={theme} />}
-      {page === 'chatroom' && <Chatroom />}
+      {page === 'ai'       && <Chatroom />}
       {page === 'settings' && <Settings theme={theme} setTheme={t => { setTheme(t); setTweak('theme', t); }} cursorStyle={cursorStyle} setCursorStyle={setCursorStyle} reduce={reduce} setReduce={setReduce} bigText={bigText} setBigText={setBigText} user={user} onSignOut={handleSignOut} onShowAuth={() => setShowAuth(true)} onCloakSave={c => pushSettings({ cloak: c })} syncStatus={syncStatus} />}
       {page === 'about'    && <About />}
 

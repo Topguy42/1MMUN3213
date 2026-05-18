@@ -21,6 +21,7 @@ body {
   background: #000000;
   scroll-behavior: smooth;
   color: #ffffff;
+  cursor: none;
 }
 
 ::-webkit-scrollbar-track {

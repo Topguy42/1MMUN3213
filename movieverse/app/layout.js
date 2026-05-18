@@ -1,6 +1,7 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Header from "@/partials/header/Header";
+import CustomCursor from "@/components/CustomCursor";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { UserInfoProvider } from "@/context/UserInfoContext";
@@ -15,6 +16,7 @@ export default async function RootLayout({ children }) {
     <html lang="en">
       <body className={inter.className}>
         <UserInfoProvider>
+          <CustomCursor />
           <Header />
           {children}
           <Analytics />
