@@ -1,0 +1,27 @@
+[build]
+  publish = "public"
+
+# API routes → Netlify Functions
+[[redirects]]
+  from = "/api/tab-meta"
+  to = "/.netlify/functions/tab-meta"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/tv-proxy"
+  to = "/.netlify/functions/tv-proxy"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/sports/live"
+  to = "/.netlify/functions/sports-live"
+  status = 200
+  force = true
+
+# SPA fallback — serve index.html for all client-side routes
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
