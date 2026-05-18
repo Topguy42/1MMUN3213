@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
-import { FiSend, FiMenu, FiX, FiPlus, FiEdit2, FiTrash2, FiCopy, FiRefreshCw, FiSquare, FiChevronDown, FiSearch } from "react-icons/fi"
+import { FiSend, FiMenu, FiX, FiPlus, FiEdit2, FiTrash2, FiCopy, FiRefreshCw, FiSquare, FiChevronDown, FiSearch, FiPaperclip } from "react-icons/fi"
 import ChatMessage from "./ChatMessage"
 import Sidebar from "./Sidebar"
 import styles from "./ai.module.css"
@@ -17,8 +17,10 @@ export default function AIAssistant() {
   const [currentChatId, setCurrentChatId] = useState(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState(null)
+  const [attachedFiles, setAttachedFiles] = useState([])
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
+  const fileInputRef = useRef(null)
   const abortControllerRef = useRef(null)
 
   const scrollToBottom = () => {
@@ -128,7 +130,7 @@ export default function AIAssistant() {
 
   const sendMessage = async (e) => {
     e.preventDefault()
-    if (!input.trim() || loading) return
+    if (!input.trim() && attachedFiles.length === 0 || loading) return
 
     const apiKey = getApiKey()
     if (!apiKey) {
@@ -139,12 +141,27 @@ export default function AIAssistant() {
     const userMessage = {
       id: Date.now(),
       role: "user",
-      content: input,
+      content: [],
+      files: attachedFiles,
+    }
+
+    if (input.trim()) {
+      userMessage.content.push({ type: "text", text: input })
+    }
+
+    for (const file of attachedFiles) {
+      if (file.type === "image") {
+        userMessage.content.push({
+          type: "image_url",
+          image_url: { url: file.data },
+        })
+      }
     }
 
     const newMessages = [...messages, userMessage]
     setMessages(newMessages)
     setInput("")
+    setAttachedFiles([])
     setLoading(true)
 
     abortControllerRef.current = new AbortController()
@@ -157,10 +174,10 @@ export default function AIAssistant() {
           Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: "gpt-4-turbo",
+          model: "gpt-4-vision",
           messages: newMessages.map(m => ({
             role: m.role,
-            content: m.content,
+            content: Array.isArray(m.content) ? m.content : m.content,
           })),
           stream: true,
           temperature: 0.7,
@@ -323,6 +340,35 @@ export default function AIAssistant() {
     navigator.clipboard.writeText(text)
   }
 
+  const handleFileSelect = async (e) => {
+    const files = Array.from(e.target.files || [])
+    const newFiles = []
+
+    for (const file of files) {
+      if (file.type.startsWith("image/")) {
+        const reader = new FileReader()
+        reader.onload = (event) => {
+          newFiles.push({
+            id: Date.now() + Math.random(),
+            name: file.name,
+            type: "image",
+            data: event.target.result,
+          })
+          setAttachedFiles(prev => [...prev, ...newFiles])
+        }
+        reader.readAsDataURL(file)
+      }
+    }
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
+  }
+
+  const removeAttachedFile = (fileId) => {
+    setAttachedFiles(prev => prev.filter(f => f.id !== fileId))
+  }
+
   return (
     <div className={styles.container}>
       <div className={styles.wrapper}>
@@ -411,9 +457,76 @@ export default function AIAssistant() {
             </div>
           )}
 
+          {/* File Attachments Preview */}
+          {attachedFiles.length > 0 && (
+            <div style={{
+              padding: "12px",
+              borderTop: "1px solid #313e50",
+              display: "flex",
+              gap: "8px",
+              flexWrap: "wrap",
+              alignItems: "flex-start",
+            }}>
+              {attachedFiles.map(file => (
+                <div
+                  key={file.id}
+                  style={{
+                    position: "relative",
+                    borderRadius: "4px",
+                    overflow: "hidden",
+                    backgroundColor: "#1a1625",
+                  }}
+                >
+                  <img
+                    src={file.data}
+                    alt={file.name}
+                    style={{
+                      width: "60px",
+                      height: "60px",
+                      objectFit: "cover",
+                      display: "block",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeAttachedFile(file.id)}
+                    style={{
+                      position: "absolute",
+                      top: "2px",
+                      right: "2px",
+                      width: "20px",
+                      height: "20px",
+                      borderRadius: "50%",
+                      backgroundColor: "rgba(0,0,0,0.7)",
+                      border: "none",
+                      color: "#fff",
+                      fontSize: "12px",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: "0",
+                    }}
+                    title="Remove file"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Input */}
           <form onSubmit={sendMessage} className={styles.inputForm}>
             <div className={styles.inputWrapper}>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleFileSelect}
+                style={{ display: "none" }}
+              />
               <textarea
                 ref={inputRef}
                 value={input}
@@ -432,6 +545,15 @@ export default function AIAssistant() {
                 }}
                 disabled={loading}
               />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className={styles.attachBtn}
+                disabled={loading}
+                title="Attach image"
+              >
+                <FiPaperclip size={20} />
+              </button>
               {loading ? (
                 <button
                   type="button"
@@ -445,7 +567,7 @@ export default function AIAssistant() {
                 <button
                   type="submit"
                   className={styles.sendBtn}
-                  disabled={!input.trim() || loading}
+                  disabled={!input.trim() && attachedFiles.length === 0 || loading}
                   title="Send message"
                 >
                   <FiSend size={20} />
