@@ -355,8 +355,8 @@ const AuthModal = ({ onClose }) => {
   );
 };
 
-const PAGE_KEYS = ['home', 'games', 'apps', 'tv', 'chatroom', 'settings', 'about'];
-const PAGE_LABELS = { tv: 'tv' };
+const PAGE_KEYS = ['home', 'games', 'apps', 'tv', 'ai', 'settings', 'about'];
+const PAGE_LABELS = { tv: 'tv', ai: 'ai' };
 
 function pageFromPath() {
   const raw = location.pathname.replace(/^\//, '');
@@ -1894,7 +1894,7 @@ const App = () => {
       {page === 'games'    && <Catalog kind="games" items={window.GAMES} tags={window.GAME_TAGS} setActiveItem={setActiveItem} favorites={favorites} toggleFav={toggleFav} />}
       {page === 'apps'     && <Catalog kind="apps"  items={window.APPS}  tags={window.APP_TAGS}  setActiveItem={setActiveItem} favorites={favorites} toggleFav={toggleFav} />}
       {page === 'tv'       && <OneMMUN3TV theme={theme} />}
-      {page === 'chatroom' && <Chatroom />}
+      {page === 'ai'       && <Chatroom />}
       {page === 'settings' && <Settings theme={theme} setTheme={t => { setTheme(t); setTweak('theme', t); }} cursorStyle={cursorStyle} setCursorStyle={setCursorStyle} reduce={reduce} setReduce={setReduce} bigText={bigText} setBigText={setBigText} user={user} onSignOut={handleSignOut} onShowAuth={() => setShowAuth(true)} onCloakSave={c => pushSettings({ cloak: c })} syncStatus={syncStatus} />}
       {page === 'about'    && <About />}
 
