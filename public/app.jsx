@@ -1677,7 +1677,7 @@ const AI = () => {
         openai: 'https://api.openai.com/v1/chat/completions',
       };
       const models = {
-        groq: 'llama-3.1-70b-versatile',
+        groq: 'llama-3.3-70b-versatile',
         openai: 'gpt-3.5-turbo',
       };
 
