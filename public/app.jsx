@@ -355,8 +355,8 @@ const AuthModal = ({ onClose }) => {
   );
 };
 
-const PAGE_KEYS = ['home', 'games', 'apps', 'tv', 'ai', 'settings', 'about'];
-const PAGE_LABELS = { tv: 'tv', ai: 'ai' };
+const PAGE_KEYS = ['home', 'games', 'apps', 'tv', 'ai', 'chatroom', 'settings', 'about'];
+const PAGE_LABELS = { tv: 'tv' };
 
 function pageFromPath() {
   const raw = location.pathname.replace(/^\//, '');
