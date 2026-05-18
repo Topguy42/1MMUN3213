@@ -1711,9 +1711,26 @@ const AI = () => {
   return (
     <div style={{ position: 'fixed', top: 53, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', background: 'var(--bg)', color: 'var(--text)', fontFamily: 'Inter, sans-serif' }}>
       {/* Header */}
-      <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--line)', background: 'var(--bg2)' }}>
-        <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text)' }}>AI Assistant</div>
-        <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '2px' }}>Powered by OpenAI</div>
+      <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--line)', background: 'var(--bg2)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text)' }}>AI Assistant</div>
+          <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '2px' }}>Powered by OpenAI</div>
+        </div>
+        <button
+          onClick={() => setShowApiInput(!showApiInput)}
+          style={{
+            background: 'transparent',
+            border: '1px solid var(--line)',
+            color: 'var(--muted)',
+            padding: '6px 12px',
+            cursor: 'pointer',
+            borderRadius: '4px',
+            fontSize: '12px',
+            fontWeight: '500',
+          }}
+        >
+          {showApiInput ? 'Cancel' : 'Change Key'}
+        </button>
       </div>
 
       {/* Messages */}
