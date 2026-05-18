@@ -649,13 +649,15 @@ const Catalog = ({ kind, items, tags, setActiveItem, favorites, toggleFav }) => 
                   <span className="name">{it.title}</span>
                   <span className="id-tag">{String(i + 1).padStart(3, '0')}</span>
                 </div>
-                <button
+                <div
                   className={cx('fav-btn', isFav && 'active')}
                   onClick={e => { e.stopPropagation(); toggleFav?.(kind, it.id); }}
                   title={isFav ? 'remove from saved' : 'save'}
+                  role="button"
+                  tabIndex="0"
                 >
                   {isFav ? '♥' : '♡'}
-                </button>
+                </div>
               </button>
             );
           })}
