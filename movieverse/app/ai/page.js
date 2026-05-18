@@ -1,5 +1,6 @@
 import AIAssistant from "@/content/ai/AIAssistant"
 
+// AI page component
 export const metadata = {
   title: "AI Assistant — 1MMUN3 TV",
   description: "Fast, intelligent AI assistant with no login required.",
