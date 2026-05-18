@@ -1601,6 +1601,252 @@ const Chatroom = () => {
   );
 };
 
+const AI = () => {
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [apiKey, setApiKey] = useState(() => {
+    try {
+      return localStorage.getItem('ai_api_key') || '';
+    } catch {
+      return '';
+    }
+  });
+  const [showApiInput, setShowApiInput] = useState(!apiKey);
+  const messagesEndRef = useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('ai_messages');
+      if (saved) {
+        setMessages(JSON.parse(saved));
+      }
+    } catch {}
+  }, []);
+
+  const saveMessages = (msgs) => {
+    try {
+      localStorage.setItem('ai_messages', JSON.stringify(msgs));
+    } catch {}
+  };
+
+  const handleApiKeySave = (key) => {
+    if (key.trim()) {
+      try {
+        localStorage.setItem('ai_api_key', key.trim());
+      } catch {}
+      setApiKey(key.trim());
+      setShowApiInput(false);
+    }
+  };
+
+  const sendMessage = async (e) => {
+    e.preventDefault();
+    if (!input.trim() || loading || !apiKey) return;
+
+    const userMessage = {
+      id: Date.now(),
+      role: 'user',
+      content: input.trim(),
+    };
+
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
+    setInput('');
+    setLoading(true);
+
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-3.5-turbo',
+          messages: newMessages.map(m => ({
+            role: m.role,
+            content: m.content,
+          })),
+          temperature: 0.7,
+          max_tokens: 1000,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const assistantMessage = {
+        id: Date.now() + 1,
+        role: 'assistant',
+        content: data.choices[0]?.message?.content || 'No response',
+      };
+
+      const updatedMessages = [...newMessages, assistantMessage];
+      setMessages(updatedMessages);
+      saveMessages(updatedMessages);
+    } catch (err) {
+      const errorMessage = {
+        id: Date.now() + 1,
+        role: 'assistant',
+        content: `Error: ${err.message}. Please check your API key.`,
+      };
+      const errorMessages = [...newMessages, errorMessage];
+      setMessages(errorMessages);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ position: 'fixed', top: 53, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', background: 'var(--bg)', color: 'var(--text)', fontFamily: 'Inter, sans-serif' }}>
+      {/* Header */}
+      <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--line)', background: 'var(--bg2)' }}>
+        <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text)' }}>AI Assistant</div>
+        <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '2px' }}>Powered by OpenAI</div>
+      </div>
+
+      {/* Messages */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {messages.length === 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--muted)' }}>
+            Start a conversation
+          </div>
+        )}
+        {messages.map((msg) => (
+          <div
+            key={msg.id}
+            style={{
+              display: 'flex',
+              justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
+              marginBottom: '8px',
+            }}
+          >
+            <div
+              style={{
+                maxWidth: '70%',
+                padding: '12px 16px',
+                borderRadius: '8px',
+                background: msg.role === 'user' ? 'var(--primary, #3b82f6)' : 'var(--bg2)',
+                color: msg.role === 'user' ? 'white' : 'var(--text)',
+                wordWrap: 'break-word',
+                lineHeight: '1.4',
+              }}
+            >
+              {msg.content}
+            </div>
+          </div>
+        ))}
+        {loading && (
+          <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--muted)', animation: 'pulse 1.4s infinite' }} />
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--muted)', animation: 'pulse 1.4s infinite 0.2s' }} />
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--muted)', animation: 'pulse 1.4s infinite 0.4s' }} />
+          </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* API Key Input */}
+      {showApiInput && (
+        <div style={{ padding: '16px 24px', borderTop: '1px solid var(--line)', background: 'var(--bg2)' }}>
+          <div style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '8px' }}>Enter your OpenAI API key (saved locally):</div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <input
+              type="password"
+              placeholder="sk-..."
+              defaultValue={apiKey}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleApiKeySave(e.target.value);
+                }
+              }}
+              style={{
+                flex: 1,
+                padding: '8px 12px',
+                border: '1px solid var(--line)',
+                borderRadius: '4px',
+                background: 'var(--bg)',
+                color: 'var(--text)',
+                fontSize: '12px',
+              }}
+            />
+            <button
+              onClick={(e) => {
+                const input = e.target.parentElement.querySelector('input');
+                handleApiKeySave(input.value);
+              }}
+              style={{
+                padding: '8px 16px',
+                background: 'var(--primary, #3b82f6)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '12px',
+              }}
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Input Form */}
+      <form onSubmit={sendMessage} style={{ padding: '16px 24px', borderTop: '1px solid var(--line)', display: 'flex', gap: '8px' }}>
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder={apiKey ? 'Ask me anything...' : 'Set API key first'}
+          disabled={loading || !apiKey}
+          style={{
+            flex: 1,
+            padding: '10px 12px',
+            border: '1px solid var(--line)',
+            borderRadius: '4px',
+            background: 'var(--bg2)',
+            color: 'var(--text)',
+            fontSize: '14px',
+          }}
+        />
+        <button
+          type="submit"
+          disabled={loading || !input.trim() || !apiKey}
+          style={{
+            padding: '10px 16px',
+            background: loading || !input.trim() || !apiKey ? 'var(--muted)' : 'var(--primary, #3b82f6)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: loading || !input.trim() || !apiKey ? 'default' : 'pointer',
+            fontSize: '14px',
+          }}
+        >
+          {loading ? 'Thinking...' : 'Send'}
+        </button>
+      </form>
+
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 0.4; }
+          50% { opacity: 1; }
+        }
+      `}</style>
+    </div>
+  );
+};
+
 const SPLASHES = [
   'bypassing the matrix fr',
   'filter thought it had me 💀',
@@ -1884,7 +2130,8 @@ const App = () => {
       {page === 'games'    && <Catalog kind="games" items={window.GAMES} tags={window.GAME_TAGS} setActiveItem={setActiveItem} favorites={favorites} toggleFav={toggleFav} />}
       {page === 'apps'     && <Catalog kind="apps"  items={window.APPS}  tags={window.APP_TAGS}  setActiveItem={setActiveItem} favorites={favorites} toggleFav={toggleFav} />}
       {page === 'tv'       && <OneMMUN3TV theme={theme} />}
-      {page === 'ai'       && <Chatroom />}
+      {page === 'chatroom' && <Chatroom />}
+      {page === 'ai'       && <AI />}
       {page === 'settings' && <Settings theme={theme} setTheme={t => { setTheme(t); setTweak('theme', t); }} cursorStyle={cursorStyle} setCursorStyle={setCursorStyle} reduce={reduce} setReduce={setReduce} bigText={bigText} setBigText={setBigText} user={user} onSignOut={handleSignOut} onShowAuth={() => setShowAuth(true)} onCloakSave={c => pushSettings({ cloak: c })} syncStatus={syncStatus} />}
       {page === 'about'    && <About />}
 
