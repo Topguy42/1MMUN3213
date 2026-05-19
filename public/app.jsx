@@ -879,6 +879,10 @@ const Settings = ({ theme, setTheme, cursorStyle, setCursorStyle, reduce, setRed
   const [importUrl, setImportUrl] = useState('');
   const [importBusy, setImportBusy] = useState(false);
   const [importErr, setImportErr] = useState('');
+  const [textCloaking, setTextCloaking] = useState(() => {
+    const stored = localStorage.getItem('textCloakingEnabled');
+    return stored === null ? false : stored === 'true';
+  });
 
   const applyImportedMeta = (data) => {
     setCloakPresetId('custom');
@@ -1000,6 +1004,7 @@ const Settings = ({ theme, setTheme, cursorStyle, setCursorStyle, reduce, setRed
     { key: 'autoBlank', val: autoBlank, set: setAutoBlank, label: 'auto about:blank', sub: 'open everything in a cloak window by default.' },
     { key: 'stealth',   val: stealth,   set: setStealth,   label: 'stealth route',    sub: 'strip referrers and telemetry on every jump.' },
     { key: 'antiGuardian', val: antiGuardian, set: (v) => { setAntiGuardian(v); localStorage.setItem('1MMUN3AntiGuardian', v); }, label: 'anti-guardian', sub: 'prevent your teacher from closing this tab.' },
+    { key: 'textCloaking', val: textCloaking, set: (v) => { setTextCloaking(v); window.TextCloakAPI?.[v ? 'enable' : 'disable']?.(); }, label: 'text cloaking', sub: 'obfuscate characters to bypass text filters.' },
     { key: 'reduce',    val: reduce,    set: setReduce,    label: 'reduce motion',     sub: 'turn off background animations.' },
     { key: 'bigText',   val: bigText,   set: setBigText,   label: 'larger text',      sub: 'bumps up font sizes a notch.' },
   ];
@@ -1980,11 +1985,52 @@ const VOICE_PRESETS = {
   },
 };
 
+const TextCloakPopup = ({ onDismiss }) => {
+  const [isClosing, setIsClosing] = useState(false);
+  const [step, setStep] = useState(0);
+
+  const slides = [
+    {
+      icon: '🛡️',
+      title: 'Text Cloaking is Enabled',
+      description: 'Characters on your screen have been obfuscated to stop AI powered filters.',
+      sub: 'This can be configured in ⚙ Settings.'
+    },
+  ];
+
+  const handleDismiss = () => {
+    setIsClosing(true);
+    setTimeout(onDismiss, 300);
+  };
+
+  return (
+    <div className={cx('text-cloak-modal', isClosing && 'closing')}>
+      <div className="text-cloak-modal-content">
+        <div className="text-cloak-modal-icon">{slides[step].icon}</div>
+        <h2>{slides[step].title}</h2>
+        <p>{slides[step].description}</p>
+        <div className="modal-sub">{slides[step].sub}</div>
+
+        <div className="text-cloak-modal-actions">
+          <button className="btn accent" onClick={handleDismiss} style={{ flex: 1 }}>
+            Next →
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const App = () => {
   const [tweaks, setTweak] = useTweaks(window.TWEAK_DEFAULTS);
   const [page, setPageState] = useState(pageFromPath);
   const [theme, setTheme] = useState(tweaks.theme);
   const [activeItem, setActiveItem] = useState(null);
+  const [showTextCloakPopup, setShowTextCloakPopup] = useState(() => {
+    const enabled = localStorage.getItem('textCloakingEnabled') === 'true';
+    const seen = localStorage.getItem('textCloakPopupSeen') === 'true';
+    return enabled && !seen;
+  });
 
   // ── cursor ──
   const [cursorStyle, setCursorStyleState] = useState(() => localStorage.getItem('1MMUN3Cursor') || 'dot');
@@ -2190,6 +2236,7 @@ const App = () => {
       {page === 'about'    && <About />}
 
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
+      {showTextCloakPopup && <TextCloakPopup onDismiss={() => { setShowTextCloakPopup(false); localStorage.setItem('textCloakPopupSeen', 'true'); }} />}
       <LaunchModal item={activeItem} onClose={() => setActiveItem(null)} />
 
       <TweaksPanel title="Tweaks" defaultOpen={false}>
