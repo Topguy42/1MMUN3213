@@ -1004,7 +1004,7 @@ const Settings = ({ theme, setTheme, cursorStyle, setCursorStyle, reduce, setRed
     { key: 'autoBlank', val: autoBlank, set: setAutoBlank, label: 'auto about:blank', sub: 'open everything in a cloak window by default.' },
     { key: 'stealth',   val: stealth,   set: setStealth,   label: 'stealth route',    sub: 'strip referrers and telemetry on every jump.' },
     { key: 'antiGuardian', val: antiGuardian, set: (v) => { setAntiGuardian(v); localStorage.setItem('1MMUN3AntiGuardian', v); }, label: 'anti-guardian', sub: 'prevent your teacher from closing this tab.' },
-    { key: 'textCloaking', val: textCloaking, set: (v) => { setTextCloaking(v); window.TextCloakAPI?.[v ? 'enable' : 'disable']?.(); }, label: 'text cloaking', sub: 'obfuscate characters to bypass text filters.' },
+    { key: 'textCloaking', val: textCloaking, set: (v) => { setTextCloaking(v); window.TextCloakUtils?.setEnabled(v); if (v) window.TextCloakUtils?.applyToElement(document.body); else window.TextCloakUtils?.removeFromElement(document.body); }, label: 'text cloaking', sub: 'obfuscate characters to bypass text filters.' },
     { key: 'reduce',    val: reduce,    set: setReduce,    label: 'reduce motion',     sub: 'turn off background animations.' },
     { key: 'bigText',   val: bigText,   set: setBigText,   label: 'larger text',      sub: 'bumps up font sizes a notch.' },
   ];

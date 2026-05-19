@@ -12,79 +12,63 @@ const CLOAK_MAP = {
   '7': '7', '8': '8', '9': '9'
 };
 
-function cloakText(text) {
-  return text.split('').map(char => CLOAK_MAP[char] || char).join('');
-}
+window.TextCloakUtils = {
+  cloakText(text) {
+    return text.split('').map(char => CLOAK_MAP[char] || char).join('');
+  },
 
-function uncloakText(text) {
-  const reverseMap = Object.fromEntries(Object.entries(CLOAK_MAP).map(([k, v]) => [v, k]));
-  return text.split('').map(char => reverseMap[char] || char).join('');
-}
+  uncloakText(text) {
+    const reverseMap = Object.fromEntries(Object.entries(CLOAK_MAP).map(([k, v]) => [v, k]));
+    return text.split('').map(char => reverseMap[char] || char).join('');
+  },
 
-function isTextCloakingEnabled() {
-  const stored = localStorage.getItem('textCloakingEnabled');
-  return stored === null ? false : stored === 'true';
-}
+  isEnabled() {
+    const stored = localStorage.getItem('textCloakingEnabled');
+    return stored === null ? false : stored === 'true';
+  },
 
-function setTextCloakingEnabled(enabled) {
-  localStorage.setItem('textCloakingEnabled', String(enabled));
-}
+  setEnabled(enabled) {
+    localStorage.setItem('textCloakingEnabled', String(enabled));
+  },
 
-function applyTextCloaking(element) {
-  if (!isTextCloakingEnabled()) return;
-  
-  const walker = document.createTreeWalker(
-    element,
-    NodeFilter.SHOW_TEXT,
-    null,
-    false
-  );
+  applyToElement(element) {
+    if (!this.isEnabled()) return;
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null, false);
+    const nodes = [];
+    let node;
+    while (node = walker.nextNode()) {
+      nodes.push(node);
+    }
+    nodes.forEach(textNode => {
+      textNode.textContent = this.cloakText(textNode.textContent);
+    });
+  },
 
-  const nodesToCloak = [];
-  let node;
-  while (node = walker.nextNode()) {
-    nodesToCloak.push(node);
+  removeFromElement(element) {
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null, false);
+    const nodes = [];
+    let node;
+    while (node = walker.nextNode()) {
+      nodes.push(node);
+    }
+    nodes.forEach(textNode => {
+      textNode.textContent = this.uncloakText(textNode.textContent);
+    });
   }
+};
 
-  nodesToCloak.forEach(textNode => {
-    textNode.textContent = cloakText(textNode.textContent);
-  });
-}
-
-function removeTextCloaking(element) {
-  const walker = document.createTreeWalker(
-    element,
-    NodeFilter.SHOW_TEXT,
-    null,
-    false
-  );
-
-  const nodesToUncloak = [];
-  let node;
-  while (node = walker.nextNode()) {
-    nodesToUncloak.push(node);
-  }
-
-  nodesToUncloak.forEach(textNode => {
-    textNode.textContent = uncloakText(textNode.textContent);
-  });
-}
-
-function initTextCloaking() {
-  if (isTextCloakingEnabled()) {
-    applyTextCloaking(document.body);
-  }
-
+// Setup observer AFTER React has rendered
+setTimeout(() => {
   const observer = new MutationObserver((mutations) => {
-    if (!isTextCloakingEnabled()) return;
-    
+    if (!window.TextCloakUtils.isEnabled()) return;
+
     mutations.forEach((mutation) => {
       if (mutation.type === 'childList') {
         mutation.addedNodes.forEach((node) => {
           if (node.nodeType === Node.ELEMENT_NODE) {
-            applyTextCloaking(node);
-          } else if (node.nodeType === Node.TEXT_NODE) {
-            node.textContent = cloakText(node.textContent);
+            window.TextCloakUtils.applyToElement(node);
+          } else if (node.nodeType === Node.TEXT_NODE && node.textContent?.trim()) {
+            node.textContent = window.TextCloakUtils.cloakText(node.textContent);
           }
         });
       }
@@ -95,30 +79,4 @@ function initTextCloaking() {
     childList: true,
     subtree: true
   });
-
-  window.TextCloakAPI = {
-    enable() {
-      setTextCloakingEnabled(true);
-      applyTextCloaking(document.body);
-    },
-    disable() {
-      setTextCloakingEnabled(false);
-      removeTextCloaking(document.body);
-    },
-    toggle() {
-      if (isTextCloakingEnabled()) {
-        this.disable();
-      } else {
-        this.enable();
-      }
-    },
-    isEnabled: isTextCloakingEnabled
-  };
-}
-
-// Auto-init on document ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initTextCloaking);
-} else {
-  initTextCloaking();
-}
+}, 500);
