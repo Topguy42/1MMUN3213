@@ -57,8 +57,14 @@ window.TextCloakUtils = {
   }
 };
 
-// Setup observer AFTER React has rendered
-setTimeout(() => {
+// Apply initial cloaking and setup observer
+function initObserver() {
+  // Apply to existing content
+  if (window.TextCloakUtils.isEnabled()) {
+    window.TextCloakUtils.applyToElement(document.body);
+  }
+
+  // Setup observer for new content
   const observer = new MutationObserver((mutations) => {
     if (!window.TextCloakUtils.isEnabled()) return;
 
@@ -79,4 +85,7 @@ setTimeout(() => {
     childList: true,
     subtree: true
   });
-}, 500);
+}
+
+// Setup observer AFTER React has rendered
+setTimeout(initObserver, 600);

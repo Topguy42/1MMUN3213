@@ -20,6 +20,11 @@
   <script>
     window.TWEAK_DEFAULTS = { "theme": "acid", "voice": "punchy" };
     window.TV_APP_URL = '/tv';
+    // Enable text cloaking by default
+    if (!localStorage.getItem('textCloakingInitialized')) {
+      localStorage.setItem('textCloakingEnabled', 'true');
+      localStorage.setItem('textCloakingInitialized', 'true');
+    }
   </script>
   <script src="/assets/js/settings.js"></script>
   <script src="/assets/js/proxy-scramjet.js" defer></script>
