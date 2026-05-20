@@ -9,34 +9,35 @@ const CLOAK_MAPS = {
     'A': 'А', 'B': 'В', 'C': 'С', 'E': 'Е', 'H': 'Һ', 'I': 'І', 'O': 'О', 'P': 'Р', 'Y': 'У',
   },
   heavy: {
-    'a': 'а', 'b': 'b', 'c': 'с', 'd': 'd', 'e': 'е', 'f': 'f', 'g': 'g',
-    'h': 'һ', 'i': 'і', 'j': 'ј', 'k': 'k', 'l': 'l', 'm': 'm', 'n': 'n',
-    'o': 'о', 'p': 'р', 'q': 'q', 'r': 'r', 's': 's', 't': 't', 'u': 'u',
-    'v': 'v', 'w': 'w', 'x': 'x', 'y': 'у', 'z': 'z',
-    'A': 'А', 'B': 'В', 'C': 'С', 'D': 'D', 'E': 'Е', 'F': 'F', 'G': 'G',
-    'H': 'Һ', 'I': 'І', 'J': 'J', 'K': 'K', 'L': 'L', 'M': 'M', 'N': 'N',
-    'O': 'О', 'P': 'Р', 'Q': 'Q', 'R': 'R', 'S': 'S', 'T': 'T', 'U': 'U',
-    'V': 'V', 'W': 'W', 'X': 'X', 'Y': 'У', 'Z': 'Z',
-    '0': '0', '1': '1', '2': '2', '3': '3', '4': '4', '5': '5', '6': '6',
-    '7': '7', '8': '8', '9': '9'
+    'a': 'ɑ', 'b': 'ᓅ', 'c': 'ϲ', 'd': 'ɖ', 'e': 'ₑ', 'f': 'ϝ', 'g': 'ƃ',
+    'h': 'һ', 'i': 'ᴉ', 'j': 'ј', 'k': 'ₖ', 'l': '|', 'm': 'ₘ', 'n': 'ₙ',
+    'o': 'ο', 'p': 'ρ', 'q': 'q', 'r': 'ᵣ', 's': 'ſ', 't': 'ₜ', 'u': 'ᴜ',
+    'v': 'ν', 'w': 'ω', 'x': 'ₓ', 'y': 'ᵧ', 'z': 'ᴢ',
+    'A': 'ᴀ', 'B': 'ᴮ', 'C': 'ϲ', 'D': 'ᴅ', 'E': 'ᴱ', 'F': 'ᶠ', 'G': 'ᴳ',
+    'H': 'ᴴ', 'I': 'ᴵ', 'J': 'ᴶ', 'K': 'ᴷ', 'L': 'ᴸ', 'M': 'ᴹ', 'N': 'ᴺ',
+    'O': 'ᴼ', 'P': 'ᴾ', 'Q': 'ᴼ', 'R': 'ᴿ', 'S': 'ˢ', 'T': 'ᵀ', 'U': 'ᵁ',
+    'V': 'ᴾ', 'W': 'ᴷ', 'X': 'ˣ', 'Y': 'ʸ', 'Z': 'ᶻ',
   }
 };
+
+// Store original text content on elements so we can toggle between cloaked and uncloaked
+const ORIGINAL_TEXT_KEY = '__originalText__';
 
 window.TextCloakUtils = {
   getStrength() {
     return localStorage.getItem('textCloakStrength') || 'heavy';
   },
-
+  
   setStrength(strength) {
     localStorage.setItem('textCloakStrength', strength);
   },
-
+  
   cloakText(text) {
     const strength = this.getStrength();
     const map = CLOAK_MAPS[strength] || CLOAK_MAPS.heavy;
     return text.split('').map(char => map[char] || char).join('');
   },
-
+  
   uncloakText(text) {
     let reverseMap = {};
     Object.values(CLOAK_MAPS).forEach(map => {
@@ -46,71 +47,97 @@ window.TextCloakUtils = {
     });
     return text.split('').map(char => reverseMap[char] || char).join('');
   },
-
+  
   isEnabled() {
     const stored = localStorage.getItem('textCloakingEnabled');
     return stored === null ? false : stored === 'true';
   },
-
+  
   setEnabled(enabled) {
     localStorage.setItem('textCloakingEnabled', String(enabled));
   },
+  
+  processElement(node) {
+    if (!node) return;
 
-  applyToElement(element) {
-    if (!this.isEnabled()) return;
-    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null, false);
-    const nodes = [];
-    let node;
-    while (node = walker.nextNode()) {
-      nodes.push(node);
+    // Walk through all text nodes
+    const walk = document.createTreeWalker(
+      node,
+      NodeFilter.SHOW_TEXT,
+      null,
+      false
+    );
+
+    const textNodes = [];
+    let currentNode;
+    while (currentNode = walk.nextNode()) {
+      if (currentNode.nodeValue && currentNode.nodeValue.trim()) {
+        textNodes.push(currentNode);
+      }
     }
-    nodes.forEach(textNode => {
-      textNode.textContent = this.cloakText(textNode.textContent);
+
+    const isEnabled = this.isEnabled();
+    console.log(`TextCloak: processElement found ${textNodes.length} text nodes, enabled=${isEnabled}`);
+
+    textNodes.forEach((textNode, idx) => {
+      // Store original if not stored
+      if (!textNode[ORIGINAL_TEXT_KEY]) {
+        textNode[ORIGINAL_TEXT_KEY] = textNode.nodeValue;
+      }
+
+      // Apply or remove cloaking based on current state
+      const original = textNode[ORIGINAL_TEXT_KEY];
+      if (isEnabled) {
+        const cloaked = this.cloakText(original);
+        textNode.nodeValue = cloaked;
+        if (idx === 0) console.log(`TextCloak: Sample - "${original}" -> "${cloaked}"`);
+      } else {
+        textNode.nodeValue = original;
+      }
     });
   },
-
+  
+  applyToElement(element) {
+    this.processElement(element);
+  },
+  
   removeFromElement(element) {
-    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null, false);
-    const nodes = [];
-    let node;
-    while (node = walker.nextNode()) {
-      nodes.push(node);
-    }
-    nodes.forEach(textNode => {
-      textNode.textContent = this.uncloakText(textNode.textContent);
-    });
+    this.processElement(element);
   }
 };
 
-// Apply initial cloaking and setup observer
-function initObserver() {
-  // Apply to existing content
+// Wait for React to render, then apply cloaking
+function initCloaking() {
+  // Apply to initial content
   if (window.TextCloakUtils.isEnabled()) {
     window.TextCloakUtils.applyToElement(document.body);
   }
-
-  // Setup observer for new content
+  
+  // Watch for new content
   const observer = new MutationObserver((mutations) => {
     if (!window.TextCloakUtils.isEnabled()) return;
-
+    
     mutations.forEach((mutation) => {
-      if (mutation.type === 'childList') {
-        mutation.addedNodes.forEach((node) => {
-          if (node.nodeType === Node.ELEMENT_NODE) {
-            window.TextCloakUtils.applyToElement(node);
-          } else if (node.nodeType === Node.TEXT_NODE && node.textContent?.trim()) {
-            node.textContent = window.TextCloakUtils.cloakText(node.textContent);
-          }
-        });
-      }
+      mutation.addedNodes.forEach((node) => {
+        if (node.nodeType === Node.ELEMENT_NODE || node.nodeType === Node.TEXT_NODE) {
+          window.TextCloakUtils.processElement(node.parentElement || node);
+        }
+      });
     });
   });
-
+  
   observer.observe(document.body, {
     childList: true,
     subtree: true
   });
+  
+  console.log('Text cloaking initialized. Enabled:', window.TextCloakUtils.isEnabled());
 }
 
-// Setup observer AFTER React has rendered and stabilized
-setTimeout(initObserver, 1500);
+// Wait for React to fully render
+setTimeout(() => {
+  const enabled = localStorage.getItem('textCloakingEnabled');
+  console.log('TextCloak: Initializing with enabled =', enabled);
+  console.log('TextCloak: Strength =', localStorage.getItem('textCloakStrength') || 'heavy');
+  initCloaking();
+}, 800);
