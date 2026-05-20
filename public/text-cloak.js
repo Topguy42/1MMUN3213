@@ -1,24 +1,49 @@
-// Character mappings for text cloaking using lookalike Unicode characters
-const CLOAK_MAP = {
-  'a': 'а', 'b': 'b', 'c': 'с', 'd': 'd', 'e': 'е', 'f': 'f', 'g': 'g',
-  'h': 'һ', 'i': 'і', 'j': 'ј', 'k': 'k', 'l': 'l', 'm': 'm', 'n': 'n',
-  'o': 'о', 'p': 'р', 'q': 'q', 'r': 'r', 's': 's', 't': 't', 'u': 'u',
-  'v': 'v', 'w': 'w', 'x': 'x', 'y': 'у', 'z': 'z',
-  'A': 'А', 'B': 'В', 'C': 'С', 'D': 'D', 'E': 'Е', 'F': 'F', 'G': 'G',
-  'H': 'Һ', 'I': 'І', 'J': 'J', 'K': 'K', 'L': 'L', 'M': 'M', 'N': 'N',
-  'O': 'О', 'P': 'Р', 'Q': 'Q', 'R': 'R', 'S': 'S', 'T': 'T', 'U': 'U',
-  'V': 'V', 'W': 'W', 'X': 'X', 'Y': 'У', 'Z': 'Z',
-  '0': '0', '1': '1', '2': '2', '3': '3', '4': '4', '5': '5', '6': '6',
-  '7': '7', '8': '8', '9': '9'
+// Character mappings for text cloaking - different strength levels
+const CLOAK_MAPS = {
+  light: {
+    'a': 'а', 'e': 'е', 'o': 'о', 'p': 'р', 'y': 'у',
+    'A': 'А', 'E': 'Е', 'O': 'О', 'P': 'Р', 'Y': 'У',
+  },
+  medium: {
+    'a': 'а', 'b': 'b', 'c': 'с', 'e': 'е', 'h': 'һ', 'i': 'і', 'o': 'о', 'p': 'р', 'y': 'у',
+    'A': 'А', 'B': 'В', 'C': 'С', 'E': 'Е', 'H': 'Һ', 'I': 'І', 'O': 'О', 'P': 'Р', 'Y': 'У',
+  },
+  heavy: {
+    'a': 'а', 'b': 'b', 'c': 'с', 'd': 'd', 'e': 'е', 'f': 'f', 'g': 'g',
+    'h': 'һ', 'i': 'і', 'j': 'ј', 'k': 'k', 'l': 'l', 'm': 'm', 'n': 'n',
+    'o': 'о', 'p': 'р', 'q': 'q', 'r': 'r', 's': 's', 't': 't', 'u': 'u',
+    'v': 'v', 'w': 'w', 'x': 'x', 'y': 'у', 'z': 'z',
+    'A': 'А', 'B': 'В', 'C': 'С', 'D': 'D', 'E': 'Е', 'F': 'F', 'G': 'G',
+    'H': 'Һ', 'I': 'І', 'J': 'J', 'K': 'K', 'L': 'L', 'M': 'M', 'N': 'N',
+    'O': 'О', 'P': 'Р', 'Q': 'Q', 'R': 'R', 'S': 'S', 'T': 'T', 'U': 'U',
+    'V': 'V', 'W': 'W', 'X': 'X', 'Y': 'У', 'Z': 'Z',
+    '0': '0', '1': '1', '2': '2', '3': '3', '4': '4', '5': '5', '6': '6',
+    '7': '7', '8': '8', '9': '9'
+  }
 };
 
 window.TextCloakUtils = {
+  getStrength() {
+    return localStorage.getItem('textCloakStrength') || 'heavy';
+  },
+
+  setStrength(strength) {
+    localStorage.setItem('textCloakStrength', strength);
+  },
+
   cloakText(text) {
-    return text.split('').map(char => CLOAK_MAP[char] || char).join('');
+    const strength = this.getStrength();
+    const map = CLOAK_MAPS[strength] || CLOAK_MAPS.heavy;
+    return text.split('').map(char => map[char] || char).join('');
   },
 
   uncloakText(text) {
-    const reverseMap = Object.fromEntries(Object.entries(CLOAK_MAP).map(([k, v]) => [v, k]));
+    let reverseMap = {};
+    Object.values(CLOAK_MAPS).forEach(map => {
+      Object.entries(map).forEach(([k, v]) => {
+        reverseMap[v] = k;
+      });
+    });
     return text.split('').map(char => reverseMap[char] || char).join('');
   },
 

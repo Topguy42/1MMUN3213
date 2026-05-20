@@ -883,6 +883,10 @@ const Settings = ({ theme, setTheme, cursorStyle, setCursorStyle, reduce, setRed
     const stored = localStorage.getItem('textCloakingEnabled');
     return stored === null ? false : stored === 'true';
   });
+  const [cloakStrength, setCloakStrength] = useState(() => {
+    const stored = localStorage.getItem('textCloakStrength');
+    return stored || 'heavy';
+  });
 
   const applyImportedMeta = (data) => {
     setCloakPresetId('custom');
@@ -1223,6 +1227,44 @@ const Settings = ({ theme, setTheme, cursorStyle, setCursorStyle, reduce, setRed
               </div>
             ))}
           </div>
+
+          {textCloaking && (
+            <div className="panel">
+              <span className="panel-tag">// obfuscation</span>
+              <h3>cloak strength</h3>
+              <p className="h-sub">choose how obvious the character obfuscation is.</p>
+              <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                {['light', 'medium', 'heavy'].map(level => (
+                  <button
+                    key={level}
+                    type="button"
+                    onClick={() => {
+                      setCloakStrength(level);
+                      localStorage.setItem('textCloakStrength', level);
+                      window.TextCloakUtils?.setStrength(level);
+                      window.TextCloakUtils?.removeFromElement(document.body);
+                      window.TextCloakUtils?.applyToElement(document.body);
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '10px 12px',
+                      borderRadius: '6px',
+                      border: cloakStrength === level ? '2px solid var(--accent)' : '1px solid var(--line)',
+                      background: cloakStrength === level ? 'var(--accent-dim)' : 'var(--bg2)',
+                      color: 'var(--text)',
+                      cursor: 'pointer',
+                      fontWeight: cloakStrength === level ? '600' : '400',
+                      fontSize: '12px',
+                      textTransform: 'capitalize',
+                      transition: 'all 150ms'
+                    }}
+                  >
+                    {level}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="panel">
             <span className="panel-tag">// account</span>
