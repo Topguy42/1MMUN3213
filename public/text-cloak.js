@@ -112,5 +112,5 @@ function initObserver() {
   });
 }
 
-// Setup observer AFTER React has rendered
-setTimeout(initObserver, 600);
+// Setup observer AFTER React has rendered and stabilized
+setTimeout(initObserver, 1500);
