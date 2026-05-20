@@ -1,23 +1,22 @@
-// Character mappings for text cloaking - different strength levels
-// Using Cyrillic and Greek lookalikes that are semi-readable and same size
+// Character mappings for text cloaking - pure Unicode characters, NO diacritics
 const CLOAK_MAPS = {
   light: {
     'a': 'а', 'e': 'е', 'o': 'о', 'p': 'р', 'y': 'у',
     'A': 'А', 'E': 'Е', 'O': 'О', 'P': 'Р', 'Y': 'У',
   },
   medium: {
-    'a': 'а', 'c': 'с', 'e': 'е', 'h': 'һ', 'i': 'і', 'o': 'о', 'p': 'р', 'x': 'х', 'y': 'у',
-    'A': 'А', 'C': 'С', 'E': 'Е', 'H': 'Һ', 'I': 'І', 'O': 'О', 'P': 'Р', 'X': 'Х', 'Y': 'У',
+    'a': 'а', 'b': 'в', 'c': 'с', 'e': 'е', 'h': 'һ', 'i': 'і', 'o': 'о', 'p': 'р', 'x': 'х', 'y': 'у',
+    'A': 'А', 'B': 'В', 'C': 'С', 'E': 'Е', 'H': 'Һ', 'I': 'І', 'O': 'О', 'P': 'Р', 'X': 'Х', 'Y': 'У',
   },
   heavy: {
-    'a': 'а', 'b': 'ḃ', 'c': 'с', 'd': 'ḏ', 'e': 'е', 'f': 'ғ', 'g': 'ḡ',
-    'h': 'һ', 'i': 'і', 'j': 'ј', 'k': 'κ', 'l': 'ł', 'm': 'ṁ', 'n': 'ṅ',
-    'o': 'о', 'p': 'р', 'q': 'ϑ', 'r': 'ṛ', 's': 'ѕ', 't': 'ţ', 'u': 'ս',
-    'v': 'ν', 'w': 'ώ', 'x': 'х', 'y': 'у', 'z': 'ẑ',
-    'A': 'А', 'B': 'Ḃ', 'C': 'С', 'D': 'Ḏ', 'E': 'Е', 'F': 'Ғ', 'G': 'Ḡ',
-    'H': 'Һ', 'I': 'І', 'J': 'Ј', 'K': 'Κ', 'L': 'Ł', 'M': 'Ṁ', 'N': 'Ṅ',
-    'O': 'О', 'P': 'Р', 'Q': 'Θ', 'R': 'Ṛ', 'S': 'Ѕ', 'T': 'Ţ', 'U': 'Ս',
-    'V': 'Ν', 'W': 'Ώ', 'X': 'Х', 'Y': 'У', 'Z': 'Ẑ',
+    'a': 'а', 'b': 'в', 'c': 'с', 'd': 'д', 'e': 'е', 'f': 'ғ', 'g': 'ց',
+    'h': 'һ', 'i': 'і', 'j': 'ј', 'k': 'κ', 'l': 'ι', 'm': 'м', 'n': 'ո',
+    'o': 'о', 'p': 'р', 'q': 'θ', 'r': 'г', 's': 'ѕ', 't': 'т', 'u': 'υ',
+    'v': 'ν', 'w': 'ω', 'x': 'х', 'y': 'у', 'z': 'з',
+    'A': 'А', 'B': 'В', 'C': 'С', 'D': 'Д', 'E': 'Е', 'F': 'Ғ', 'G': 'Ց',
+    'H': 'Һ', 'I': 'І', 'J': 'Ј', 'K': 'Κ', 'L': 'Ι', 'M': 'М', 'N': 'Ո',
+    'O': 'О', 'P': 'Р', 'Q': 'Θ', 'R': 'Г', 'S': 'Ѕ', 'T': 'Т', 'U': 'Υ',
+    'V': 'Ν', 'W': 'Ω', 'X': 'Х', 'Y': 'У', 'Z': 'З',
   }
 };
 
@@ -78,22 +77,25 @@ window.TextCloakUtils = {
     }
 
     const isEnabled = this.isEnabled();
-    console.log(`TextCloak: processElement found ${textNodes.length} text nodes, enabled=${isEnabled}`);
+    const strength = this.getStrength();
+    console.log(`TextCloak: processElement found ${textNodes.length} text nodes, enabled=${isEnabled}, strength=${strength}`);
 
     textNodes.forEach((textNode, idx) => {
-      // Store original if not stored
+      // Always restore to original first
       if (!textNode[ORIGINAL_TEXT_KEY]) {
         textNode[ORIGINAL_TEXT_KEY] = textNode.nodeValue;
       }
 
-      // Apply or remove cloaking based on current state
+      // Always start from the original, never from a cloaked version
       const original = textNode[ORIGINAL_TEXT_KEY];
+
       if (isEnabled) {
         const cloaked = this.cloakText(original);
         textNode.nodeValue = cloaked;
-        if (idx === 0) console.log(`TextCloak: Sample - "${original}" -> "${cloaked}"`);
+        if (idx === 0) console.log(`TextCloak: Sample - "${original}" -> "${cloaked}" (${strength})`);
       } else {
         textNode.nodeValue = original;
+        if (idx === 0) console.log(`TextCloak: Sample - uncloaked to "${original}"`);
       }
     });
   },
